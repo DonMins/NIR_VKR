@@ -1,4 +1,4 @@
-importimport matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import pandas as pd
 import os
 import mne
@@ -8,6 +8,7 @@ from collections import deque
 from mne.minimum_norm import read_inverse_operator, compute_source_psd
 from scipy.interpolate import interp1d
 from scipy.interpolate import CubicSpline
+from scipy.signal import hilbert, chirp
 N_DATA = 11001
 NUMBER_CHANNELS = 16
 FREQUENCY = 400
@@ -68,7 +69,7 @@ def average(data, number):
     return sum / k,XAmplit, Amplitude
 
 
-def matOj(input):
+def matWating(input):
     avg = 0
     for j in range(len(input)):
         avg += (input[j])
@@ -78,7 +79,7 @@ def matOj(input):
 # нахождение дисперсии
 def dispers(input):
     disper = 0
-    avg = matOj(input)
+    avg = matWating(input)
     for i in range(len(input)):
         disper += (input[i] - avg) ** 2
     return disper / (N_DATA - 1)
@@ -89,7 +90,7 @@ correlValues = []
 
 # подсчёт корреляционной функции
 def correlfunction(input):
-    avg = matOj(input)
+    avg = matWating(input)
     for i in range((len(input)) - 1):
         temp = 0
         for j in range(len(input) - i):
@@ -165,19 +166,53 @@ def cor12(x, y):
 
     return sum / N_DATA
 
-def corOgib(x,xi,y,yi):
-    xTmp = average(x,xi)
-    xAmplit = xTmp[1]
-    xAmplitude = xTmp[2]
+def corrEnvelope(x, y):
+    avgX = matWating(x)
+    avgY = matWating(y)
+    covXY = 0
+    for i in range(N_DATA):
+        covXY+=(x[i]-avgX)*(y[i]-avgY)
+    denominator =0
+    dispersionX =0
+    dispersionY =0
+    for i in range(N_DATA):
+        dispersionX += (x[i]-avgX)**2
+        dispersionY+= (y[i]-avgY)**2
+    denominator = (dispersionX*dispersionY)**0.5
 
-    csX = CubicSpline(xAmplit, xAmplitude, bc_type=((2, 0.0), (2, 0.0)))
+    return covXY/denominator
 
-    yTmp = average(y, yi)
-    yAmplit = yTmp[1]
-    yAmplitude = yTmp[2]
-    xs = np.arange(0, 11000, 0.1)
-    csY = CubicSpline(yAmplit, yAmplitude, bc_type=((2, 0.0), (2, 0.0)))
-    return cor12(csX(xs),csY(xs))
+def plotEnvelope(data):
+
+    amplitude_envelope = np.imag(hilbert(data))
+    envelopeArray  = []
+    for i in range(len(data)):
+       envelopeArray.append(((data[i])**2 + (amplitude_envelope[i])**2)**0.5)
+
+    #cглаживание 5 раз
+    for k in range(5):
+        for  i in range(len(data)-2):
+            envelopeArray[i+1] = (envelopeArray[i]+2*envelopeArray[i+1]+envelopeArray[i+2])/4
+
+    x = [i for i in np.arange(0,len(data)/200,0.005)]
+    plt.figure("Огибающая")
+    plt.plot(x[200:1200], data[200:1200],  color = '#000000')
+    plt.plot(x[200:1200], envelopeArray[200:1200],  color = '#ff0000')
+    plt.xlabel("Время (сек) ")
+    plt.ylabel("Амплитуда")
+    plt.grid()
+    plt.show()
+
+def avgTwoCanal(i,j):
+    sum = 0
+
+    for k in range(1, 40):
+        path1 = "Norm\\" + str(k) + ".txt"
+        path2 = "Shiz\\" + str(k) + ".txt"
+        norm = pd.read_csv(path2, sep=" ", header=None)
+        sum+= round(corrEnvelope(norm[i][0:N_DATA],norm[j][0:N_DATA]), 2)
+
+    return sum/39
 
 
 
@@ -190,45 +225,29 @@ if __name__ == "__main__":
 
     path1 = "Norm\\" + str(1) + ".txt"
     data = pd.read_csv(path1, sep=" ", header=None)
-   # path2 = "Norm\\" +"1st.txt"
-    #data2 = pd.read_csv(path2, sep=" ", header=None)
+    path2 = "Norm\\" +"1st.txt"
+    data2 = pd.read_csv(path2, sep=" ", header=None)
 
-    analytic_signal = hilbert(data[1][0:500])
-    amplitude_envelope = (analytic_signal)
-    ogib=[]
-    for i in range(500):
-        ogib.append(np.abs((data[1][i])+(amplitude_envelope[i])))
-
-    x = [i for i in range(0,500)]
-    plt.plot(x,data[1][0:500],x,ogib)
+    # print("F3F4  = ", avgTwoCanal(2,3))
+    # print("C3C4  = ", avgTwoCanal(6,8))
+    # print("P3P4  = ", avgTwoCanal(11,13))
+    # print("O1O2  = ", avgTwoCanal(15,16))
+    norm = [0.83,0.74,0.64,0.62]
+    shiz = [0.78,0.67,0.55,0.49]
+    x =[i for i in np.arange(0,1,0.25)]
+    my_xticks = ['F3-4', 'C3-4', 'P3-4', 'O1-2']
+    plt.figure("Межполушарная синхронность фильтрация в альфа диапазоне")
+    #plt.grid()
+    plt.xticks(x, my_xticks)
+    plt.title(r'$\alpha$')
+    plt.plot(x,norm,marker = 's',color = '#ff0000')
+    plt.plot(x,shiz,marker = 'o',color = '#000000')
+    plt.legend(("Норм","Shiz"))
     plt.grid()
     plt.show()
 
-    # print("Cтанд фильтр ", average(data, 2))
-    # # #print("no filter ",average(data2, 1))
-    # plt.figure("Огибающая")
-    # plt.grid()
-    # x = [i for i in range(N_DATA)]
-    # plt.plot(x,data[2][0:N_DATA], color = '#000000')
-    # plt.plot(XAmplit,Amplitude,color = '#ff0000')
-    #
-    # plt.show()
-    #
-    #
-    # cs = CubicSpline(XAmplit, Amplitude , bc_type=((2, 0.0), (2, 0.0)))
-    # print(Amplitude)
-    # print(XAmplit)
-    #
-    # xs = np.arange(9, 11000, 0.1)
-    # plt.plot(x, data[2][0:N_DATA],  color = '#000000')
-    # plt.plot(xs, cs(xs),color = '#ff0000')
-    # print(cs(xs))
-    # plt.grid()
-    # plt.show()
 
-
-
-        # w = np.fft.fft(data[1][0:11000])
+    # w = np.fft.fft(data[1][0:11000])
     # arg = []
     # A=[]
     # freq = []
@@ -317,3 +336,32 @@ if __name__ == "__main__":
 
 
 
+
+    # arrayNorm = []
+    # arrayShiz = []
+    # graficArrayNorm = []
+    # graficArrayShiz = []
+    # namePara = {'F7F3 F3F4 F4F8  F8T3 T3C3 C3Cz C4T4 T4T5  T5P3 P3Pz PzP4 P4T6 T6O O1O2 T5T6 P3P4 T3T4 C3C4 F7F8 '}
+    # namePara2 = { 'T5T6 P3P4 T3T4 C3C4 F7F8 '}
+    # synchroMatrixNorm = np.zeros((40, 22))
+    # synchroMatrixShiz = np.zeros((40, 22))
+    #
+    # for i in range(1, 2):
+    #     path1 = "Norm\\" + str(i) + ".txt"
+    #     path2 = "Shiz\\" + str(i) + ".txt"
+    #     norm = pd.read_csv(path1, sep=" ", header=None)
+    #     shiz = pd.read_csv(path2, sep=" ", header=None)
+    #     for j in range(1,16):
+    #         synchroMatrixNorm[i - 1][j - 1] = round(corrEnvelope(norm[j][0:N_DATA],norm[j+1][0:N_DATA]), 2)
+    #         synchroMatrixNorm[i - 1][15] = round(corrEnvelope(norm[10][0:N_DATA], norm[14][0:N_DATA]), 2)
+    #         synchroMatrixNorm[i - 1][16] = round(corrEnvelope(norm[11][0:N_DATA], norm[13][0:N_DATA]), 2)
+    #         synchroMatrixNorm[i - 1][17] = round(corrEnvelope(norm[5][0:N_DATA], norm[9][0:N_DATA]), 2)
+    #         synchroMatrixNorm[i - 1][18] = round(corrEnvelope(norm[6][0:N_DATA], norm[8][0:N_DATA]), 2)
+    #         synchroMatrixNorm[i - 1][19] = round(corrEnvelope(norm[1][0:N_DATA], norm[4][0:N_DATA]), 2)
+    #        # synchroMatrixShiz[i - 1][j - 1] = round(cor12(shiz[j][0:N_DATA],shiz[j+1][0:N_DATA]),2)
+    #
+    #
+    #
+    # print(namePara)
+    # for i in range(39):
+    #      print(*[synchroMatrixNorm[i, j] for j in range(20)])
