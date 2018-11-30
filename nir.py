@@ -66,7 +66,7 @@ def average(data, number):
                 XAmplit.append(j)
             sum = sum + abs(i2)
 
-    return sum / k,XAmplit, Amplitude
+    return sum /k ,XAmplit, Amplitude
 
 
 def matWating(input):
@@ -105,39 +105,41 @@ def AmplitudeAllPac(N):
     graficArrayShiz = []
 
     for i in range(1, N + 1):
-        path1 = "Norm\\" + str(i) + ".txt"
-        path2 = "Shiz\\" + str(i) + ".txt"
+        path1 = "NormAlpha\\" + str(i) + ".txt"
+        path2 = "ShizAlpha\\" + str(i) + ".txt"
         tmp = 0
         tmp2 = 0
         norm = pd.read_csv(path1, sep=" ", header=None)
         shiz = pd.read_csv(path2, sep=" ", header=None)
         for k in range(1, NUMBER_CHANNELS + 1):
-            arrayNorm.append(average(norm, k))
-            arrayShiz.append(average(shiz, k))
+            av1 = average(norm, k)
+            arrayNorm.append(av1[0])
+            av2 = average(shiz, k)
+            arrayShiz.append(av2[0])
         for j in range(NUMBER_CHANNELS):
             tmp = tmp + arrayShiz[j]
             tmp2 = tmp2 + arrayNorm[j]
         graficArrayShiz.append(tmp / len(arrayShiz))
         graficArrayNorm.append(tmp2 / len(arrayNorm))
 
-        print("Пациенты № " + str(i))
-        print("Норма                       Shiz ")
-        print("F7 = {0}    F7 = {1}:  ".format(arrayNorm[0], arrayShiz[0]))
-        print("F3 = {0}    F3 {1} :  ".format(arrayNorm[1], arrayShiz[1]))
-        print("F4 = {0}    F4 {1} :  ".format(arrayNorm[2], arrayShiz[2]))
-        print("F8 = {0}    F8 {1} :  ".format(arrayNorm[3], arrayShiz[3]))
-        print("T3 = {0}    T3 {1} :  ".format(arrayNorm[4], arrayShiz[4]))
-        print("C3 = {0}    C3 {1} :  ".format(arrayNorm[5], arrayShiz[5]))
-        print("Cz = {0}    Cz {1} :  ".format(arrayNorm[6], arrayShiz[6]))
-        print("C4 = {0}    C4 {1} :  ".format(arrayNorm[7], arrayShiz[7]))
-        print("T4 = {0}    T4 {1} :  ".format(arrayNorm[8], arrayShiz[8]))
-        print("T5 = {0}    T5 {1} :  ".format(arrayNorm[9], arrayShiz[9]))
-        print("P3 = {0}    P3 {1} :  ".format(arrayNorm[10], arrayShiz[10]))
-        print("Pz = {0}    Pz {1} :  ".format(arrayNorm[11], arrayShiz[11]))
-        print("P4 = {0}    P4 {1} :  ".format(arrayNorm[12], arrayShiz[12]))
-        print("T6 = {0}    T6 {1} :  ".format(arrayNorm[13], arrayShiz[13]))
-        print("O1 = {0}    O1 {1} :  ".format(arrayNorm[14], arrayShiz[14]))
-        print("O2 = {0}    O2 {1} :  ".format(arrayNorm[15], arrayShiz[15]))
+        # print("Пациенты № " + str(i))
+        # print("Норма                       Shiz ")
+        # print("F7 = {0}    F7 = {1}:  ".format(arrayNorm[0], arrayShiz[0]))
+        # print("F3 = {0}    F3 {1} :  ".format(arrayNorm[1], arrayShiz[1]))
+        # print("F4 = {0}    F4 {1} :  ".format(arrayNorm[2], arrayShiz[2]))
+        # print("F8 = {0}    F8 {1} :  ".format(arrayNorm[3], arrayShiz[3]))
+        # print("T3 = {0}    T3 {1} :  ".format(arrayNorm[4], arrayShiz[4]))
+        # print("C3 = {0}    C3 {1} :  ".format(arrayNorm[5], arrayShiz[5]))
+        # print("Cz = {0}    Cz {1} :  ".format(arrayNorm[6], arrayShiz[6]))
+        # print("C4 = {0}    C4 {1} :  ".format(arrayNorm[7], arrayShiz[7]))
+        # print("T4 = {0}    T4 {1} :  ".format(arrayNorm[8], arrayShiz[8]))
+        # print("T5 = {0}    T5 {1} :  ".format(arrayNorm[9], arrayShiz[9]))
+        # print("P3 = {0}    P3 {1} :  ".format(arrayNorm[10], arrayShiz[10]))
+        # print("Pz = {0}    Pz {1} :  ".format(arrayNorm[11], arrayShiz[11]))
+        # print("P4 = {0}    P4 {1} :  ".format(arrayNorm[12], arrayShiz[12]))
+        # print("T6 = {0}    T6 {1} :  ".format(arrayNorm[13], arrayShiz[13]))
+        # print("O1 = {0}    O1 {1} :  ".format(arrayNorm[14], arrayShiz[14]))
+        # print("O2 = {0}    O2 {1} :  ".format(arrayNorm[15], arrayShiz[15]))
 
         arrayNorm = []
         arrayShiz = []
@@ -154,6 +156,9 @@ def AmplitudeAllPac(N):
     plt.legend((leg1, leg2), ("Norm", "Shiz"))
     plt.grid(True)
     plt.show()
+
+    print(graficArrayShiz)
+    print(graficArrayNorm)
 
 
 def cor12(x, y):
@@ -208,7 +213,7 @@ def avgTwoCanal(i,j):
 
     for k in range(1, 40):
         path1 = "Norm\\" + str(k) + ".txt"
-        path2 = "Shiz\\" + str(k) + ".txt"
+        path2 = "ShizBetta2\\" + str(k) + ".txt"
         norm = pd.read_csv(path2, sep=" ", header=None)
         sum+= round(corrEnvelope(norm[i][0:N_DATA],norm[j][0:N_DATA]), 2)
 
@@ -223,28 +228,40 @@ if __name__ == "__main__":
     # print(g2)
     # #[4, 9, 1, 5, 14, 5]
 
-    path1 = "Norm\\" + str(1) + ".txt"
+    path1 = "NormAlpha\\" + str(1) + ".txt"
     data = pd.read_csv(path1, sep=" ", header=None)
-    path2 = "Norm\\" +"1st.txt"
-    data2 = pd.read_csv(path2, sep=" ", header=None)
+    # path2 = "Norm\\" +"1st.txt"
+    # data2 = pd.read_csv(path2, sep=" ", header=None)
 
     # print("F3F4  = ", avgTwoCanal(2,3))
     # print("C3C4  = ", avgTwoCanal(6,8))
     # print("P3P4  = ", avgTwoCanal(11,13))
     # print("O1O2  = ", avgTwoCanal(15,16))
-    norm = [0.83,0.74,0.64,0.62]
-    shiz = [0.78,0.67,0.55,0.49]
-    x =[i for i in np.arange(0,1,0.25)]
-    my_xticks = ['F3-4', 'C3-4', 'P3-4', 'O1-2']
-    plt.figure("Межполушарная синхронность фильтрация в альфа диапазоне")
-    #plt.grid()
-    plt.xticks(x, my_xticks)
-    plt.title(r'$\alpha$')
-    plt.plot(x,norm,marker = 's',color = '#ff0000')
-    plt.plot(x,shiz,marker = 'o',color = '#000000')
-    plt.legend(("Норм","Shiz"))
-    plt.grid()
-    plt.show()
+    #AmplitudeAllPac(39)
+
+    times = np.arange(1, 100, 1)
+    # If times is set to None only 10 regularly spaced topographies will be shown
+
+    # plot magnetometer data as topomaps
+    data[1][0:100].plot_topomap(times, ch_type='mag', time_unit='s')
+
+   #  norm = [0.78,0.784,0.72,0.63]
+   #  shiz = [0.77,0.76,0.65,0.53]
+   #  x =[i for i in np.arange(0,1,0.25)]
+   #  my_xticks = ['F3-4', 'C3-4', 'P3-4', 'O1-2']
+   #  plt.figure("Межполушарная синхронность фильтрация в тета  диапазоне")
+   #  #plt.grid()
+   #  plt.xticks(x, my_xticks)
+   #  #plt.title(r'$\alpha$')
+   # # plt.title(r'$\beta1$')
+   #  #plt.title(r'$\beta2$')
+   #  plt.title(r'$\theta$')
+   # # plt.title(r'$\delta$')
+   #  plt.plot(x,norm,marker = 's',color = '#ff0000')
+   #  plt.plot(x,shiz,marker = 'o',color = '#000000')
+   #  plt.legend(("Норма","Шизофрения"))
+   #  plt.grid()
+   #  plt.show()
 
 
     # w = np.fft.fft(data[1][0:11000])
