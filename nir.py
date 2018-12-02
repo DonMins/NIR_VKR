@@ -213,7 +213,7 @@ def avgTwoCanal(i,j):
 
     for k in range(1, 40):
         path1 = "Norm\\" + str(k) + ".txt"
-        path2 = "ShizBetta2\\" + str(k) + ".txt"
+        path2 = "ShizDelta\\" + str(k) + ".txt"
         norm = pd.read_csv(path2, sep=" ", header=None)
         sum+= round(corrEnvelope(norm[i][0:N_DATA],norm[j][0:N_DATA]), 2)
 
@@ -232,36 +232,63 @@ if __name__ == "__main__":
     data = pd.read_csv(path1, sep=" ", header=None)
     # path2 = "Norm\\" +"1st.txt"
     # data2 = pd.read_csv(path2, sep=" ", header=None)
-
-    # print("F3F4  = ", avgTwoCanal(2,3))
-    # print("C3C4  = ", avgTwoCanal(6,8))
-    # print("P3P4  = ", avgTwoCanal(11,13))
-    # print("O1O2  = ", avgTwoCanal(15,16))
+    #
+    # print("------------F_L-----------------")
+    # print("F7F3  = ", avgTwoCanal(1,2))
+    # print("F7T3  = ", avgTwoCanal(1,5))
+    # print("F7C3  = ", avgTwoCanal(1,6))
+    # print("F3T3  = ", avgTwoCanal(2,5))
+    # print("F3C3  = ", avgTwoCanal(2,6))
+    # print("T3C3  = ", avgTwoCanal(5,6))
+    # print("------------F_R-----------------")
+    # print("F8F4  = ", avgTwoCanal(4,3))
+    # print("F8C4  = ", avgTwoCanal(4,8))
+    # print("F8T4  = ", avgTwoCanal(4,9))
+    # print("F4C4  = ", avgTwoCanal(3,8))
+    # print("F4T4  = ", avgTwoCanal(3,9))
+    # print("C4T4  = ", avgTwoCanal(8,9))
+    # print("------------C_L-----------------")
+    # print("T3C3  = ", avgTwoCanal(5, 6))
+    # print("T3T5  = ", avgTwoCanal(5, 10))
+    # print("T3P3  = ", avgTwoCanal(5, 11))
+    # print("C3T5  = ", avgTwoCanal(6, 10))
+    # print("C3P3  = ", avgTwoCanal(6, 11))
+    # print("T5P3  = ", avgTwoCanal(10, 11))
+    # print("------------C_R-----------------")
+    # print("C4T4  = ", avgTwoCanal(8, 9))
+    # print("C4P4  = ", avgTwoCanal(8, 13))
+    # print("C4T6  = ", avgTwoCanal(8, 14))
+    # print("T4P4  = ", avgTwoCanal(9, 13))
+    # print("T4T6  = ", avgTwoCanal(9, 14))
+    # print("P4T6  = ", avgTwoCanal(13, 14))
+    # print("------------O_l-----------------")
+    # print("T5P3  = ", avgTwoCanal(10, 11))
+    # print("T5O1  = ", avgTwoCanal(10, 15))
+    # print("P3O1  = ", avgTwoCanal(11, 15))
+    # print("------------O_r-----------------")
+    # print("P4T6  = ", avgTwoCanal(13, 14))
+    # print("T6O2  = ", avgTwoCanal(14, 16))
+    # print("P4O2  = ", avgTwoCanal(13, 16))
     #AmplitudeAllPac(39)
 
-    times = np.arange(1, 100, 1)
-    # If times is set to None only 10 regularly spaced topographies will be shown
 
-    # plot magnetometer data as topomaps
-    data[1][0:100].plot_topomap(times, ch_type='mag', time_unit='s')
-
-   #  norm = [0.78,0.784,0.72,0.63]
-   #  shiz = [0.77,0.76,0.65,0.53]
-   #  x =[i for i in np.arange(0,1,0.25)]
-   #  my_xticks = ['F3-4', 'C3-4', 'P3-4', 'O1-2']
-   #  plt.figure("Межполушарная синхронность фильтрация в тета  диапазоне")
-   #  #plt.grid()
-   #  plt.xticks(x, my_xticks)
-   #  #plt.title(r'$\alpha$')
-   # # plt.title(r'$\beta1$')
-   #  #plt.title(r'$\beta2$')
-   #  plt.title(r'$\theta$')
-   # # plt.title(r'$\delta$')
-   #  plt.plot(x,norm,marker = 's',color = '#ff0000')
-   #  plt.plot(x,shiz,marker = 'o',color = '#000000')
-   #  plt.legend(("Норма","Шизофрения"))
-   #  plt.grid()
-   #  plt.show()
+    norm = [0.73,0.73,0.73,0.76,0.72,0.76]
+    shiz = [0.75,0.76,0.72,0.75,0.73,0.8]
+    x =[i for i in np.arange(0,3,0.5)]
+    my_xticks = ['F_L', 'F_R', 'C_L', 'C_R', 'O_L', 'O_R']
+    plt.figure("Региональные внутриполушарные различия в дельта  диапазоне")
+    #plt.grid()
+    plt.xticks(x, my_xticks)
+    #plt.title(r'$\alpha$')
+   # plt.title(r'$\beta1$')
+    #plt.title(r'$\beta2$')
+    #plt.title(r'$\theta$')
+    plt.title(r'$\delta$')
+    plt.plot(x,norm,marker = 's',color = '#ff0000')
+    plt.plot(x,shiz,marker = 'o',color = '#000000')
+    plt.legend(("Норма","Шизофрения"))
+    plt.grid()
+    plt.show()
 
 
     # w = np.fft.fft(data[1][0:11000])
