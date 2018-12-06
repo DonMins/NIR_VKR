@@ -223,12 +223,22 @@ def avgTwoCanal(i,j):
 
     for k in range(1, 40):
         path1 = "Norm\\" + str(k) + ".txt"
-        path2 = "NormBetta1\\" + str(k) + ".txt"
+        path2 = "NormAlpha\\" + str(k) + ".txt"
         norm = pd.read_csv(path2, sep=" ", header=None)
-        sum+= round(corrEnvelope(norm[i][0:N_DATA],norm[j][0:N_DATA]), 2)
+        sum+= corrEnvelope(norm[i][0:N_DATA],norm[j][0:N_DATA])
 
     return sum/39
 
+def avgTwoCanal2(i,j):
+    sum = 0
+
+    for k in range(1, 40):
+        path1 = "Norm\\" + str(k) + ".txt"
+        path2 = "ShizAlpha\\" + str(k) + ".txt"
+        norm = pd.read_csv(path2, sep=" ", header=None)
+        sum+= corrEnvelope(norm[i][0:N_DATA],norm[j][0:N_DATA])
+
+    return sum/39
 
 
 if __name__ == "__main__":
@@ -238,8 +248,8 @@ if __name__ == "__main__":
     # print(g2)
     # #[4, 9, 1, 5, 14, 5]
 
-
-
+    #
+    print("------------Alpha_norm-----------------")
     print("------------F_L-----------------")
     print("F7F3  = ", avgTwoCanal(1,2))
     print("F7T3  = ", avgTwoCanal(1,5))
@@ -255,7 +265,7 @@ if __name__ == "__main__":
     print("F4T4  = ", avgTwoCanal(3,9))
     print("C4T4  = ", avgTwoCanal(8,9))
     print("------------C_L-----------------")
-    print("T3C3  = ", avgTwoCanal(5, 6))
+    #print("T3C3  = ", avgTwoCanal(5, 6))
     print("T3T5  = ", avgTwoCanal(5, 10))
     print("T3P3  = ", avgTwoCanal(5, 11))
     print("C3T5  = ", avgTwoCanal(6, 10))
@@ -269,7 +279,7 @@ if __name__ == "__main__":
     print("T4T6  = ", avgTwoCanal(9, 14))
     print("P4T6  = ", avgTwoCanal(13, 14))
     print("------------O_l-----------------")
-    print("T5P3  = ", avgTwoCanal(10, 11))
+   # print("T5P3  = ", avgTwoCanal(10, 11))
     print("T5O1  = ", avgTwoCanal(10, 15))
     print("P3O1  = ", avgTwoCanal(11, 15))
     print("------------O_r-----------------")
@@ -281,19 +291,97 @@ if __name__ == "__main__":
     print("C3C4  = ", avgTwoCanal(6,8))
     print("P3P4  = ", avgTwoCanal(11,13))
     print("O1O2  = ", avgTwoCanal(15,16))
-    #AmplitudeAllPac(39)
+    print("-----------------------------")
+    print("F7F8  = ", avgTwoCanal(1, 4))
+    print("T3T4  = ", avgTwoCanal(5, 9))
+    print("T5T6  = ", avgTwoCanal(10, 14))
+    print("-----------------------------")
+    print("F7T5  = ", avgTwoCanal(1, 10))
+    print("F3P3  = ", avgTwoCanal(2, 11))
+    print("F4P4  = ", avgTwoCanal(3, 13))
+    print("F8T6  = ", avgTwoCanal(4, 14))
+    print("-----------------------------")
+    print("F3O1  = ", avgTwoCanal(2, 15))
+    print("F4O2  = ", avgTwoCanal(3, 16))
+    print("-----------------------------")
+    print("F3P4  = ", avgTwoCanal(2, 10))
+    print("F4P3  = ", avgTwoCanal(3, 11))
+    print("F7T6  = ", avgTwoCanal(1, 14))
+    print("F8T5  = ", avgTwoCanal(4, 10))
+    # #AmplitudeAllPac(39)
 
-   #
-   #  norm = [0.73,0.73,0.73,0.76,0.72,0.76]
-   #  shiz = [0.75,0.76,0.72,0.75,0.73,0.8]
+    print("------------Alpha_shiz-----------------")
+    print("------------F_L-----------------")
+    print("F7F3  = ", avgTwoCanal2(1, 2))
+    print("F7T3  = ", avgTwoCanal2(1, 5))
+    print("F7C3  = ", avgTwoCanal2(1, 6))
+    print("F3T3  = ", avgTwoCanal2(2, 5))
+    print("F3C3  = ", avgTwoCanal2(2, 6))
+    print("T3C3  = ", avgTwoCanal2(5, 6))
+    print("------------F_R-----------------")
+    print("F8F4  = ", avgTwoCanal2(4, 3))
+    print("F8C4  = ", avgTwoCanal2(4, 8))
+    print("F8T4  = ", avgTwoCanal2(4, 9))
+    print("F4C4  = ", avgTwoCanal2(3, 8))
+    print("F4T4  = ", avgTwoCanal2(3, 9))
+    print("C4T4  = ", avgTwoCanal2(8, 9))
+    print("------------C_L-----------------")
+    print("T3C3  = ", avgTwoCanal2(5, 6))
+    print("T3T5  = ", avgTwoCanal2(5, 10))
+    print("T3P3  = ", avgTwoCanal2(5, 11))
+    print("C3T5  = ", avgTwoCanal2(6, 10))
+    print("C3P3  = ", avgTwoCanal2(6, 11))
+    print("T5P3  = ", avgTwoCanal2(10, 11))
+    print("------------C_R-----------------")
+    print("C4T4  = ", avgTwoCanal2(8, 9))
+    print("C4P4  = ", avgTwoCanal2(8, 13))
+    print("C4T6  = ", avgTwoCanal2(8, 14))
+    print("T4P4  = ", avgTwoCanal2(9, 13))
+    print("T4T6  = ", avgTwoCanal2(9, 14))
+    print("P4T6  = ", avgTwoCanal2(13, 14))
+    print("------------O_l-----------------")
+    print("T5P3  = ", avgTwoCanal2(10, 11))
+    print("T5O1  = ", avgTwoCanal2(10, 15))
+    print("P3O1  = ", avgTwoCanal2(11, 15))
+    print("------------O_r-----------------")
+    print("P4T6  = ", avgTwoCanal2(13, 14))
+    print("T6O2  = ", avgTwoCanal2(14, 16))
+    print("P4O2  = ", avgTwoCanal2(13, 16))
+    print("------------Межполушарная-----------------")
+    print("F3F4  = ", avgTwoCanal2(2, 3))
+    print("C3C4  = ", avgTwoCanal2(6, 8))
+    print("P3P4  = ", avgTwoCanal2(11, 13))
+    print("O1O2  = ", avgTwoCanal2(15, 16))
+    print("-----------------------------")
+    print("F7F8  = ", avgTwoCanal2(1, 4))
+    print("T3T4  = ", avgTwoCanal2(5, 9))
+    print("T5T6  = ", avgTwoCanal2(10, 14))
+    print("-----------------------------")
+    print("F7T5  = ", avgTwoCanal2(1, 10))
+    print("F3P3  = ", avgTwoCanal2(2, 11))
+    print("F4P4  = ", avgTwoCanal2(3, 13))
+    print("F8T6  = ", avgTwoCanal2(4, 14))
+    print("-----------------------------")
+    print("F3O1  = ", avgTwoCanal2(2, 15))
+    print("F4O2  = ", avgTwoCanal2(3, 16))
+    print("-----------------------------")
+    print("F3P4  = ", avgTwoCanal2(2, 10))
+    print("F4P3  = ", avgTwoCanal2(3, 11))
+    print("F7T6  = ", avgTwoCanal2(1, 14))
+    print("F8T5  = ", avgTwoCanal2(4, 10))
+
+   #  norm = [0.6,0.59,0.6,0.61,0.56,0.61]
+   #  shiz = [0.63,0.64,0.58,0.61,0.6,0.69]
    #  x =[i for i in np.arange(0,3,0.5)]
    #  my_xticks = ['F_L', 'F_R', 'C_L', 'C_R', 'O_L', 'O_R']
-   #  plt.figure("Региональные внутриполушарные различия в дельта  диапазоне")
+   #  #my_xticks = [ ' F3-4 ' , ' C3-4 ' , ' P3-4 ' , ' O1-2 ' ]
+   #  plt.figure("Региональные внутриполушарные различия в delta диапазоне")
+   #  #plt.figure("Межполушарная синхронность  в дельта диапазоне")
    #  #plt.grid()
    #  plt.xticks(x, my_xticks)
-   #  #plt.title(r'$\alpha$')
-   # # plt.title(r'$\beta1$')
-   #  #plt.title(r'$\beta2$')
+   # # plt.title(r'$\alpha$')
+   #  #plt.title(r'$\beta1$')
+   # # plt.title(r'$\beta2$')
    #  #plt.title(r'$\theta$')
    #  plt.title(r'$\delta$')
    #  plt.plot(x,norm,marker = 's',color = '#ff0000')
