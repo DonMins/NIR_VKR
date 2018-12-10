@@ -15,7 +15,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 
-import statistics
+import statistics as st
 
 N_DATA = 11001
 NUMBER_CHANNELS = 16
@@ -245,8 +245,6 @@ def genXandTest(fileName,fileNameTest):
 
     np.savetxt(fileNameTest, corrAlphaTest, fmt="%f")
 
-
-
 if __name__ == "__main__":
     # сдвиг массива
     # g2 = [14.5, 5.4, 4.4, 9.0, 1.5, 5.2]
@@ -263,22 +261,21 @@ if __name__ == "__main__":
     # amplitide(fileName)
     # amplitideTest(fileNameTest)
 # # # загрузить из файла
-    x =  np.loadtxt('corrA.txt', delimiter=" ")
-    x_test =  np.loadtxt('corrAt.txt', delimiter=" ")
-
-    clf = LinearDiscriminantAnalysis()
-    clf.fit(x, genY())
-    test_predictions = clf.predict(x_test)
-    print(test_predictions)
-
-    x = np.loadtxt('amplitude.txt', delimiter=" ")
-    x_test = np.loadtxt('amplitudeTest.txt', delimiter=" ")
-
-    clf = LinearDiscriminantAnalysis()
-    clf.fit(x, genY())
-    test_predictions = clf.predict(x_test)
-    print(test_predictions)
-
+#     x =  np.loadtxt('corrA.txt', delimiter=" ")
+#     x_test =  np.loadtxt('corrAt.txt', delimiter=" ")
+#
+#     clf = LinearDiscriminantAnalysis()
+#     clf.fit(x, genY())
+#     test_predictions = clf.predict(x_test)
+#     print(test_predictions)
+#
+#     x = np.loadtxt('amplitude.txt', delimiter=" ")
+#     x_test = np.loadtxt('amplitudeTest.txt', delimiter=" ")
+#
+#     clf = LinearDiscriminantAnalysis()
+#     clf.fit(x, genY())
+#     test_predictions = clf.predict(x_test)
+#     print(test_predictions)
 
 
 
@@ -555,4 +552,5 @@ if __name__ == "__main__":
     # print(namePara)
     # for i in range(39):
     #      print(*[synchroMatrixNorm[i, j] for j in range(20)])
+
 
