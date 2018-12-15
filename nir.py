@@ -144,8 +144,8 @@ def plotEnvelope(data, data2):
     return corrPirson
 
 
-corrAlpha = np.zeros((63, 120))
-corrAlphaTest = np.zeros((15, 120))
+corrAlpha = np.zeros((77, 120))
+corrAlphaTest = np.zeros((2, 120))
 
 def avgTwoCanalOld(i,j):
     sum = 0
@@ -163,12 +163,12 @@ def avgTwoCanal(i,j,index):
     t = 0
 
     for k in range(1, 40):
-        path2 = "NormTeta\\" + str(k) + ".txt"
-        path1 = "ShizTetha\\" + str(k) + ".txt"
+        path2 = "NormAlpha\\" + str(k) + ".txt"
+        path1 = "ShizAlpha\\" + str(k) + ".txt"
         norm = pd.read_csv(path2, sep=" ", header=None)
         shiz = pd.read_csv(path1, sep=" ", header=None)
         corrAlpha[t][index]=corrEnvelope(shiz[i][0:N_DATA],shiz[j][0:N_DATA])
-        if (k<=24):
+        if (k<=38):
             corrAlpha[t+1][index]=corrEnvelope(norm[i][0:N_DATA],norm[j][0:N_DATA])
             t = t + 2
         else:
@@ -198,7 +198,6 @@ def amplitide(fileName):
 def amplitideTest(fileNameTest):
     sum = 0
     t = 0
-
     for k in range(25, 40):
         path1 = "ShizAlpha\\" + str(k) + ".txt"
         shiz = pd.read_csv(path1, sep=" ", header=None)
@@ -211,26 +210,54 @@ def amplitideTest(fileNameTest):
 def avgTwoCanal3(i,j,index):
     sum = 0
     t =0
-    for k in range(25, 40):
-        path2 = "NormTeta\\" + str(k) + ".txt"
+    for k in range(39, 40):
+        path2 = "NormAlpha\\" + str(k) + ".txt"
         path1 = "ShizBetta2\\" + str(k) + ".txt"
         norm = pd.read_csv(path2, sep=" ", header=None)
         shiz = pd.read_csv(path1, sep=" ", header=None)
         corrAlphaTest[t][index]=corrEnvelope(norm[i][0:N_DATA],norm[j][0:N_DATA])
+        corrAlphaTest[t+1][index]=corrEnvelope(norm[i][0:N_DATA],norm[j][0:N_DATA])
         #corrAlphaTest[t][index]=corrEnvelope(shiz[i][0:N_DATA],shiz[j][0:N_DATA])
         #t=t+2
         t=t+1
 
+def cross_validate(notTake,i,j,index,fileName,fileNameTest):
+    sum = 0
+    t = 0
+    for k in range(1, 40):
+        path1 = "ShizAlpha\\" + str(k) + ".txt"
+        shiz = pd.read_csv(path1, sep=" ", header=None)
+        corrAlpha[t][index] = corrEnvelope(shiz[i][0:N_DATA], shiz[j][0:N_DATA])
+        t=t+1
+    for k in range(1, 40):
+        path2 = "NormAlpha\\" + str(k) + ".txt"
+        norm = pd.read_csv(path2, sep=" ", header=None)
+        if (k!=notTake):
+            corrAlpha[t][index] = corrEnvelope(norm[i][0:N_DATA], norm[j][0:N_DATA])
+            t=t+1
+    np.savetxt(fileName, corrAlpha, fmt="%f")
+    t=0
+    path2 = "NormAlpha\\" + str(notTake) + ".txt"
+    norm = pd.read_csv(path2, sep=" ", header=None)
+    corrAlphaTest[t][index]=corrEnvelope(norm[i][0:N_DATA],norm[j][0:N_DATA])
+    corrAlphaTest[t+1][index]=corrEnvelope(norm[i][0:N_DATA],norm[j][0:N_DATA])
+    np.savetxt(fileNameTest, corrAlphaTest, fmt="%f")
+
 def genY():
     y = []
-    for i in range(31):
+    for i in range(39):
         y.append(1)
-        if (i<24):
-            y.append(0)
-        else:
-            y.append(1)
-    y.append(1)
+    for i in range(38):
+        y.append(0)
     return y
+
+def runCross_validate():
+    index = 0
+    for i in range(1, 17):
+        for j in range(i + 1, 17):
+            cross_validate(38,i, j, index,'corrA.txt','corrAt.txt')
+            index += 1
+
 
 def genXandTest(fileName,fileNameTest):
     index = 0
@@ -250,27 +277,28 @@ def genXandTest(fileName,fileNameTest):
 
 if __name__ == "__main__":
     # сдвиг массива
-    # g2 = [14.5, 5.4, 4.4, 9.0, 1.5, 5.2]
+    #g2 = [14.5, 5.4, 4.4, 9.0, 1.5, 5.2]
     # g2 = g2[2:] + g2[:2]
     # print(g2)
     # #[4, 9, 1, 5, 14, 5]
     #
-    # fileName = open('corrTeta.txt', 'w')
-    # fileNameTest = open('corrTetaTest.txt', 'w')
+    # fileName = open('corrA.txt', 'w')
+    # fileNameTest = open('corrAt.txt', 'w')
     # genXandTest(fileName,fileNameTest)
+    runCross_validate()
 
     # fileName = open('amplitude.txt', 'w')
     # fileNameTest = open('amplitudeTest.txt', 'w')
     # amplitide(fileName)
     # amplitideTest(fileNameTest)
 # # # загрузить из файла
-    x =  np.loadtxt('corrTeta.txt', delimiter=" ")
-    x_test =  np.loadtxt('corrTetaTest.txt', delimiter=" ")
-
-    clf = LinearDiscriminantAnalysis()
-    clf.fit(x, genY())
-    test_predictions = clf.predict(x_test)
-    print(test_predictions)
+#     x =  np.loadtxt('corrA.txt', delimiter=" ")
+#     x_test =  np.loadtxt('corrAt.txt', delimiter=" ")
+#
+#     clf = LinearDiscriminantAnalysis()
+#     clf.fit(x, genY())
+#     test_predictions = clf.predict(x_test)
+#     print(test_predictions)
 
 #     x = np.loadtxt('amplitude.txt', delimiter=" ")
 #     x_test = np.loadtxt('amplitudeTest.txt', delimiter=" ")
@@ -555,4 +583,3 @@ if __name__ == "__main__":
     # print(namePara)
     # for i in range(39):
     #      print(*[synchroMatrixNorm[i, j] for j in range(20)])
-
