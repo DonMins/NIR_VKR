@@ -1,17 +1,27 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import os
-import mne
+#import mne
 import os.path as op
 import numpy as np
 from collections import deque
-from mne.minimum_norm import read_inverse_operator, compute_source_psd
+#from mne.minimum_norm import read_inverse_operator, compute_source_psd
 from scipy.interpolate import interp1d
 from scipy.interpolate import CubicSpline
 from scipy.signal import hilbert, chirp
+from scipy import signal
+import sklearn
+from sklearn.linear_model import LogisticRegression
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+
+
+import statistics as st
+from scipy.stats import chi2
+
 N_DATA = 11001
 NUMBER_CHANNELS = 16
-FREQUENCY = 400
+FREQUENCY = 200
 
 
 def EegChart(data):
@@ -41,15 +51,11 @@ def EegChart(data):
     raw.plot(n_channels=16, scalings=scalings, title='Auto-scaled Data from arrays',
              show=True, block=True)
 
-
 def average(data, number):
-    i1 = 0
-    i2 = 0
-    i3 = 0
-    k = 0
-    sum = 0
-    Amplitude = []
-    XAmplit = []
+    kNorm = 0
+    sumNorm = 0
+    kShiz=0
+    sumShiz =0
 
     for i in range(N_DATA):
         j = i + 1
@@ -60,43 +66,14 @@ def average(data, number):
         i3 = (data[number][m])
 
         if ((abs(i2) >= abs(i1)) & (abs(i2) >= abs(i3))):
-            k = k + 1
-            if(i2>0):
-                Amplitude.append(i2)
-                XAmplit.append(j)
-            sum = sum + abs(i2)
+            kNorm = kNorm + 1
+            sumNorm = sumNorm + abs(i2)
 
-    return sum /k ,XAmplit, Amplitude
+    return sumNorm/kNorm
 
 
-def matWating(input):
-    avg = 0
-    for j in range(len(input)):
-        avg += (input[j])
-    return avg / N_DATA
-
-
-# нахождение дисперсии
-def dispers(input):
-    disper = 0
-    avg = matWating(input)
-    for i in range(len(input)):
-        disper += (input[i] - avg) ** 2
-    return disper / (N_DATA - 1)
-
-
-correlValues = []
-
-
-# подсчёт корреляционной функции
-def correlfunction(input):
-    avg = matWating(input)
-    for i in range((len(input)) - 1):
-        temp = 0
-        for j in range(len(input) - i):
-            temp += (input[j] - avg) * (input[j + i] - avg)
-        correlValues.append((1 / (N_DATA - i - 1)) * temp)
-
+amplitudeTest = np.zeros((2, 16))
+amplitude = np.zeros((77, 16))
 
 def AmplitudeAllPac(N):
     arrayNorm = []
@@ -112,15 +89,9 @@ def AmplitudeAllPac(N):
         norm = pd.read_csv(path1, sep=" ", header=None)
         shiz = pd.read_csv(path2, sep=" ", header=None)
         for k in range(1, NUMBER_CHANNELS + 1):
-            av1 = average(norm, k)
-            arrayNorm.append(av1[0])
-            av2 = average(shiz, k)
-            arrayShiz.append(av2[0])
-        for j in range(NUMBER_CHANNELS):
-            tmp = tmp + arrayShiz[j]
-            tmp2 = tmp2 + arrayNorm[j]
-        graficArrayShiz.append(tmp / len(arrayShiz))
-        graficArrayNorm.append(tmp2 / len(arrayNorm))
+            av = average(norm,shiz, k)
+            arrayNorm.append(av[0])
+            arrayShiz.append(av[1])
 
         # print("Пациенты № " + str(i))
         # print("Норма                       Shiz ")
@@ -144,206 +115,533 @@ def AmplitudeAllPac(N):
         arrayNorm = []
         arrayShiz = []
 
-    plt.figure("Amplitude EEG")
-    x = [i for i in range(1, 40)]
-    leg1, leg2 = plt.plot(x, graficArrayNorm, 'o', x, graficArrayShiz, 'o')
-    plt.legend((leg1, leg2), ("Norm", "Shiz"))
-    plt.grid(True)
-    plt.show()
-
-    plt.figure("Amplitude EEG2")
-    leg1, leg2 = plt.plot(x, graficArrayNorm, x, graficArrayShiz)
-    plt.legend((leg1, leg2), ("Norm", "Shiz"))
-    plt.grid(True)
-    plt.show()
-
-    print(graficArrayShiz)
-    print(graficArrayNorm)
-
-
-def cor12(x, y):
-    sum = 0
-
-
-    for i in range(N_DATA):
-        pr = x[i] * y[i]
-        sum += pr
-
-    return sum / N_DATA
-
 def corrEnvelope(x, y):
-    avgX = matWating(x)
-    avgY = matWating(y)
-    covXY = 0
-    for i in range(N_DATA):
-        covXY+=(x[i]-avgX)*(y[i]-avgY)
-    denominator =0
-    dispersionX =0
-    dispersionY =0
-    for i in range(N_DATA):
-        dispersionX += (x[i]-avgX)**2
-        dispersionY+= (y[i]-avgY)**2
-    denominator = (dispersionX*dispersionY)**0.5
+    amplitude_envelopeX = (hilbert(x))
+    amplitude_envelopeY = (hilbert(y))
+    envelopeArrayX = np.abs(amplitude_envelopeX)
+    envelopeArrayY = np.abs(amplitude_envelopeY)
+    corrPirson =np.corrcoef(envelopeArrayX,envelopeArrayY)[0,1]
+    return corrPirson
 
-    return covXY/denominator
+def plotEnvelope(data, data2):
 
-def plotEnvelope(data):
+    data = np.abs(data)
+    data2 = np.abs(data2)
 
-    amplitude_envelope = np.imag(hilbert(data))
-    envelopeArray  = []
-    for i in range(len(data)):
-       envelopeArray.append(((data[i])**2 + (amplitude_envelope[i])**2)**0.5)
 
     #cглаживание 5 раз
-    for k in range(5):
+    for k in range(10):
         for  i in range(len(data)-2):
-            envelopeArray[i+1] = (envelopeArray[i]+2*envelopeArray[i+1]+envelopeArray[i+2])/4
+            data[i+1] = (data[i]+2*data[i+1]+data[i+2])/4
+            data2[i+1] = (data2[i]+2*data2[i+1]+data2[i+2])/4
+    corrPirson = np.corrcoef(data, data2)[0, 1]
+    return corrPirson
 
-    x = [i for i in np.arange(0,len(data)/200,0.005)]
-    plt.figure("Огибающая")
-    plt.plot(x[200:1200], data[200:1200],  color = '#000000')
-    plt.plot(x[200:1200], envelopeArray[200:1200],  color = '#ff0000')
-    plt.xlabel("Время (сек) ")
-    plt.ylabel("Амплитуда")
-    plt.grid()
-    plt.show()
 
-def avgTwoCanal(i,j):
+corrAlpha = np.zeros((77, 120))
+corrAlphaTest = np.zeros((2, 120))
+
+def avgTwoCanalOld(i,j):
     sum = 0
 
     for k in range(1, 40):
-        path1 = "Norm\\" + str(k) + ".txt"
-        path2 = "ShizDelta\\" + str(k) + ".txt"
-        norm = pd.read_csv(path2, sep=" ", header=None)
-        sum+= round(corrEnvelope(norm[i][0:N_DATA],norm[j][0:N_DATA]), 2)
+        path1 = "NormAlpha\\" + str(k) + ".txt"
+        path2 = "Shiz\\" + str(k) + ".txt"
+        norm = pd.read_csv(path1, sep=" ", header=None)
+        sum+= (plotEnvelope(norm[i][0:N_DATA],norm[j][0:N_DATA]))
 
     return sum/39
 
+def avgTwoCanal(i,j,index):
+    sum = 0
+    t = 0
 
+    for k in range(1, 40):
+        path2 = "NormAlpha\\" + str(k) + ".txt"
+        path1 = "ShizAlpha\\" + str(k) + ".txt"
+        norm = pd.read_csv(path2, sep=" ", header=None)
+        shiz = pd.read_csv(path1, sep=" ", header=None)
+        corrAlpha[t][index]=corrEnvelope(shiz[i][0:N_DATA],shiz[j][0:N_DATA])
+        if (k<=38):
+            corrAlpha[t+1][index]=corrEnvelope(norm[i][0:N_DATA],norm[j][0:N_DATA])
+            t = t + 2
+        else:
+            t=t+1
+
+def amplitide(fileName):
+    sum = 0
+    t = 0
+
+    for k in range(1, 40):
+        path2 = "NormAlpha\\" + str(k) + ".txt"
+        path1 = "ShizAlpha\\" + str(k) + ".txt"
+        norm = pd.read_csv(path2, sep=" ", header=None)
+        shiz = pd.read_csv(path1, sep=" ", header=None)
+        for m in range(1,NUMBER_CHANNELS+1):
+            tmp =average(norm,shiz,m)
+            amplitude[t][m-1] = tmp[0]
+            if (k<=24):
+                amplitude[t+1][m-1] = tmp[1]
+        if (k<=24):
+            t=t+2
+        else:
+            t = t+1
+    np.savetxt(fileName, amplitude, fmt="%f")
+
+
+def amplitideTest(fileNameTest):
+    sum = 0
+    t = 0
+    for k in range(25, 40):
+        path1 = "ShizAlpha\\" + str(k) + ".txt"
+        shiz = pd.read_csv(path1, sep=" ", header=None)
+        for m in range(1,NUMBER_CHANNELS+1):
+            tmp =average(shiz,shiz,m)
+            amplitudeTest[t][m-1] = tmp[0]
+        t = t+1
+    np.savetxt(fileNameTest, amplitudeTest, fmt="%f")
+
+def avgTwoCanal3(i,j,index):
+    sum = 0
+    t =0
+    for k in range(39, 40):
+        path2 = "NormAlpha\\" + str(k) + ".txt"
+        path1 = "ShizBetta2\\" + str(k) + ".txt"
+        norm = pd.read_csv(path2, sep=" ", header=None)
+        shiz = pd.read_csv(path1, sep=" ", header=None)
+        corrAlphaTest[t][index]=corrEnvelope(norm[i][0:N_DATA],norm[j][0:N_DATA])
+        corrAlphaTest[t+1][index]=corrEnvelope(norm[i][0:N_DATA],norm[j][0:N_DATA])
+        #corrAlphaTest[t][index]=corrEnvelope(shiz[i][0:N_DATA],shiz[j][0:N_DATA])
+        #t=t+2
+        t=t+1
+
+def cross_validate(notTake,i,j,index):
+    sum = 0
+    t = 0
+    # У corrAS сначала записаны здорове , потом шизофреники без пациента которого будет иднтифицировать
+    # У corrA наоборот - сначала все шизофрениеки ,  потом здорове без пациента которого будет идентифировать
+    for k in range(1, 40):
+        #path2 = "ShizBetta1\\" + str(k) + ".txt"
+        path2 = "ShizDelta\\" + str(k) + ".txt"
+        norm = pd.read_csv(path2, sep=" ", header=None)
+        corrAlpha[t][index] = corrEnvelope(norm[i][0:N_DATA], norm[j][0:N_DATA])
+        t=t+1
+
+    for k in range(1, 40):
+        #path1 = "NormBetta1\\" + str(k) + ".txt"
+        path1 = "NormDelta\\" + str(k) + ".txt"
+        shiz = pd.read_csv(path1, sep=" ", header=None)
+        if (k!=notTake):
+            corrAlpha[t][index] = corrEnvelope(shiz[i][0:N_DATA], shiz[j][0:N_DATA])
+            t=t+1
+    t=0
+    path1 = "NormDelta\\" + str(notTake) + ".txt"
+    #path1 = "NormBetta1\\" + str(notTake) + ".txt"
+    shiz = pd.read_csv(path1, sep=" ", header=None)
+    corrAlphaTest[t][index] = corrEnvelope(shiz[i][0:N_DATA], shiz[j][0:N_DATA])
+    corrAlphaTest[t+1][index] = corrEnvelope(shiz[i][0:N_DATA], shiz[j][0:N_DATA])
+
+
+
+
+def genY():
+    y = []
+    for i in range(39):
+        y.append(1)
+    for i in range(38):
+        y.append(0)
+    return y
+
+def runCross_validate():
+    index = 0
+    number = 1
+    for k in reversed(range(1,20)):
+        path1 = "corrDeltaSync\\"+"corrA" + str(k) + ".txt"
+        path2 = "corrDeltaTestSync\\"+ "corrAt"+str(k) + ".txt"
+        fileName = open(path1, 'w')
+        fileNameTest = open(path2, 'w')
+        for i in range(1, 17):
+            for j in range(i + 1, 17):
+                cross_validate(k,i, j, index)
+                index += 1
+        print(k)
+        np.savetxt(fileName, corrAlpha, fmt="%f")
+        np.savetxt(fileNameTest, corrAlphaTest, fmt="%f")
+        index = 0
+        number = number+1
+
+
+def Amplituda_validate(notTake):
+    sum = 0
+    t = 0
+
+    for k in range(1, 40):
+        path2 = "NormAlpha\\" + str(k) + ".txt"
+        norm = pd.read_csv(path2, sep=" ", header=None)
+        for m in range(1, NUMBER_CHANNELS + 1):
+            tmp = average(norm, m)
+            amplitude[t][m - 1] = tmp
+        t = t + 1
+
+    for k in range(1, 40):
+        path1 = "ShizAlpha\\" + str(k) + ".txt"
+        shiz = pd.read_csv(path1, sep=" ", header=None)
+        if (k != notTake):
+            for m in range(1, NUMBER_CHANNELS + 1):
+                tmp = average(shiz, m)
+                amplitude[t][m - 1] = tmp
+            t = t + 1
+
+    t = 0
+    path1 = "ShizAlpha\\" + str(notTake) + ".txt"
+    shiz = pd.read_csv(path1, sep=" ", header=None)
+    for m in range(1, NUMBER_CHANNELS + 1):
+        tmp = average(shiz, m)
+        amplitudeTest[t][m - 1] = tmp
+        amplitudeTest[t + 1][m - 1] = tmp
+
+def runAmplituda_validate():
+     for k in reversed(range(1,5)):
+        path1 = "AmplitudaAlpha\\"+"corrAS" + str(k) + ".txt"
+        path2 = "AmplitudaAlphaTest\\"+ "corrAtS"+str(k) + ".txt"
+        fileName = open(path1, 'w')
+        fileNameTest = open(path2, 'w')
+        Amplituda_validate(k)
+
+        print(k)
+        np.savetxt(fileName, amplitude, fmt="%f")
+        np.savetxt(fileNameTest, amplitudeTest, fmt="%f")
+
+
+
+def genXandTest(fileName,fileNameTest):
+    index = 0
+    for i in range(1, 17):
+        for j in range(i + 1, 17):
+            avgTwoCanal(i, j, index)
+            index += 1
+    np.savetxt(fileName, corrAlpha, fmt="%f")
+
+    index = 0
+    for i in range(1, 17):
+        for j in range(i + 1, 17):
+            avgTwoCanal3(i, j, index)
+            index += 1
+
+    np.savetxt(fileNameTest, corrAlphaTest, fmt="%f")
+
+def DoubleCorrSignalString(path1, path2,path3):
+    corrPirsonShiz=[]
+    corrPirsonNorm=[]
+
+
+    file1 = open(path1, 'r')  # Матрица синхпрнностей
+    file2 = open(path2, 'r')  # Матрица синхпрнностей
+    open(path3, 'w')
+    fileResult = open(path3, 'a')
+    x = np.loadtxt(path1, delimiter=" ")
+    y = np.loadtxt(path2, delimiter=" ")
+    for i in range(39):
+        corr = np.corrcoef(x[i][:], y[i][:])[0, 1]
+        corrPirsonShiz.append(corr)
+    for i in range(39,78):
+        corr = np.corrcoef(x[i][:], y[i][:])[0, 1]
+        corrPirsonNorm.append(corr)
+
+    print(corrPirsonShiz)
+    print("Ст.откл = ", st.stdev(corrPirsonShiz))
+    print("Cреднее = ", np.mean(corrPirsonShiz))
+    print(corrPirsonNorm)
+    print("Ст.откл = ", st.stdev(corrPirsonNorm))
+    print("Cреднее = ", np.mean(corrPirsonNorm))
+
+def DoubleCorrSignalColomn(path1, path2,path3):
+    corrPirsonShiz=[]
+    corrPirsonNorm=[]
+
+
+    file1 = open(path1, 'r')  # Матрица синхпрнностей
+    file2 = open(path2, 'r')  # Матрица синхпрнностей
+    open(path3, 'w')
+    fileResult = open(path3, 'a')
+    x = np.loadtxt(path1, delimiter=" ")
+    y = np.loadtxt(path2, delimiter=" ")
+    x = np.array(x)
+    y = np.array(y)
+
+
+    for i in range(119):
+        xTmp= x[0:38,i]
+        yTmp= y[0:38,i]
+        corr = np.corrcoef(xTmp, yTmp)[0, 1]
+        corrPirsonShiz.append(corr)
+    for i in range(119):
+        xTmp = x[39:78, i]
+        yTmp = y[39:78, i]
+        corr = np.corrcoef(xTmp, yTmp)[0, 1]
+        corrPirsonNorm.append(corr)
+
+    print(corrPirsonShiz)
+    print("Ст.откл = ", st.stdev(corrPirsonShiz))
+    print("Cреднее = ", np.mean(corrPirsonShiz))
+    print(corrPirsonNorm)
+    print("Ст.откл = ", st.stdev(corrPirsonNorm))
+    print("Cреднее = ", np.mean(corrPirsonNorm))
 
 if __name__ == "__main__":
+    DoubleCorrSignalColomn("corrAlpha.txt","corrBeta1.txt","corrDelta+Teta.txt")
     # сдвиг массива
-    # g2 = [14.5, 5.4, 4.4, 9.0, 1.5, 5.2]
+    #g2 = [14.5, 5.4, 4.4, 9.0, 1.5, 5.2]
     # g2 = g2[2:] + g2[:2]
     # print(g2)
     # #[4, 9, 1, 5, 14, 5]
-
-    path1 = "NormAlpha\\" + str(1) + ".txt"
-    data = pd.read_csv(path1, sep=" ", header=None)
-    # path2 = "Norm\\" +"1st.txt"
-    # data2 = pd.read_csv(path2, sep=" ", header=None)
     #
-    # print("------------F_L-----------------")
-    # print("F7F3  = ", avgTwoCanal(1,2))
-    # print("F7T3  = ", avgTwoCanal(1,5))
-    # print("F7C3  = ", avgTwoCanal(1,6))
-    # print("F3T3  = ", avgTwoCanal(2,5))
-    # print("F3C3  = ", avgTwoCanal(2,6))
-    # print("T3C3  = ", avgTwoCanal(5,6))
-    # print("------------F_R-----------------")
-    # print("F8F4  = ", avgTwoCanal(4,3))
-    # print("F8C4  = ", avgTwoCanal(4,8))
-    # print("F8T4  = ", avgTwoCanal(4,9))
-    # print("F4C4  = ", avgTwoCanal(3,8))
-    # print("F4T4  = ", avgTwoCanal(3,9))
-    # print("C4T4  = ", avgTwoCanal(8,9))
-    # print("------------C_L-----------------")
-    # print("T3C3  = ", avgTwoCanal(5, 6))
-    # print("T3T5  = ", avgTwoCanal(5, 10))
-    # print("T3P3  = ", avgTwoCanal(5, 11))
-    # print("C3T5  = ", avgTwoCanal(6, 10))
-    # print("C3P3  = ", avgTwoCanal(6, 11))
-    # print("T5P3  = ", avgTwoCanal(10, 11))
-    # print("------------C_R-----------------")
-    # print("C4T4  = ", avgTwoCanal(8, 9))
-    # print("C4P4  = ", avgTwoCanal(8, 13))
-    # print("C4T6  = ", avgTwoCanal(8, 14))
-    # print("T4P4  = ", avgTwoCanal(9, 13))
-    # print("T4T6  = ", avgTwoCanal(9, 14))
-    # print("P4T6  = ", avgTwoCanal(13, 14))
-    # print("------------O_l-----------------")
-    # print("T5P3  = ", avgTwoCanal(10, 11))
-    # print("T5O1  = ", avgTwoCanal(10, 15))
-    # print("P3O1  = ", avgTwoCanal(11, 15))
-    # print("------------O_r-----------------")
-    # print("P4T6  = ", avgTwoCanal(13, 14))
-    # print("T6O2  = ", avgTwoCanal(14, 16))
-    # print("P4O2  = ", avgTwoCanal(13, 16))
-    #AmplitudeAllPac(39)
+    # fileName = open('corrA.txt', 'w')
+    # fileNameTest = open('corrAt.txt', 'w')
+    # genXandTest(fileName,fileNameTest)
+    #runCross_validate()
+    #runAmplituda_validate()
+
+    # fileName = open('amplitude.txt', 'w')
+    # fileNameTest = open('amplitudeTest.txt', 'w')
+    # amplitide(fileName)
+    # amplitideTest(fileNameTest)
 
 
-    norm = [0.73,0.73,0.73,0.76,0.72,0.76]
-    shiz = [0.75,0.76,0.72,0.75,0.73,0.8]
-    x =[i for i in np.arange(0,3,0.5)]
-    my_xticks = ['F_L', 'F_R', 'C_L', 'C_R', 'O_L', 'O_R']
-    plt.figure("Региональные внутриполушарные различия в дельта  диапазоне")
-    #plt.grid()
-    plt.xticks(x, my_xticks)
-    #plt.title(r'$\alpha$')
-   # plt.title(r'$\beta1$')
-    #plt.title(r'$\beta2$')
-    #plt.title(r'$\theta$')
-    plt.title(r'$\delta$')
-    plt.plot(x,norm,marker = 's',color = '#ff0000')
-    plt.plot(x,shiz,marker = 'o',color = '#000000')
-    plt.legend(("Норма","Шизофрения"))
-    plt.grid()
-    plt.show()
+# # # загрузить из файла
+#
+    # m = 0
+    # for k in range(1,40):
+    #     path1 = "corrTetaSync\\" + "corrA" + str(k) + ".txt"
+    #     path2 = "corrTetaTestSync\\" + "corrAt" + str(k) + ".txt"
+    #     x =  np.loadtxt(path1, delimiter=" ")
+    #     x_test =  np.loadtxt(path2, delimiter=" ")
+    #     clf = LinearDiscriminantAnalysis()
+    #     clf.fit(x, genY())
+    #     test_predictions = clf.predict(x_test)
+    #     print("k = ", k, test_predictions)
+    #     if (test_predictions[0]==1):
+    #         m = m+1
+    # print("M= ",m)
+    # print ("Norm = ", 39-m)
+
+    # x = np.loadtxt('amplitude.txt', delimiter=" ")
+    # x_test = np.loadtxt('amplitudeTest.txt', delimiter=" ")
+#
+#     clf = LinearDiscriminantAnalysis()
+#     clf.fit(x, genY())
+#     test_predictions = clf.predict(x_test)
+#     print(test_predictions)
 
 
+
+    # norm = pd.read_csv("27.txt", sep=" ", header=None)
+    # norm2 = pd.read_csv("27f.txt", sep=" ", header=None)
+    # x = [i for i in np.arange(1200)]
+    # plt.figure("Огибающая")
+    # plt.plot(x[200:800], norm[1][200:800],  color = '#000000')
+    # plt.plot(x[200:800], norm2[1][200:800],  color = '#ff0000')
+    # plt.xlabel("Время (сек) ")
+    # plt.ylabel("Амплитуда")
+    # plt.grid()
+    # plt.show()
+    # #
+   #  print("------------Alpha_norm-----------------")
+   #  print("------------F_L-----------------")
+   #  print("F7F3  = ", avgTwoCanal(1,2))
+   #  print("F7T3  = ", avgTwoCanal(1,5))
+   #  print("F7C3  = ", avgTwoCanal(1,6))
+   #  print("F3T3  = ", avgTwoCanal(2,5))
+   #  print("F3C3  = ", avgTwoCanal(2,6))
+   #  print("T3C3  = ", avgTwoCanal(5,6))
+   #  print("------------F_R-----------------")
+   #  print("F8F4  = ", avgTwoCanal(4,3))
+   #  print("F8C4  = ", avgTwoCanal(4,8))
+   #  print("F8T4  = ", avgTwoCanal(4,9))
+   #  print("F4C4  = ", avgTwoCanal(3,8))
+   #  print("F4T4  = ", avgTwoCanal(3,9))
+   #  print("C4T4  = ", avgTwoCanal(8,9))
+   #  print("------------C_L-----------------")
+   #  #print("T3C3  = ", avgTwoCanal(5, 6))
+   #  print("T3T5  = ", avgTwoCanal(5, 10))
+   #  print("T3P3  = ", avgTwoCanal(5, 11))
+   #  print("C3T5  = ", avgTwoCanal(6, 10))
+   #  print("C3P3  = ", avgTwoCanal(6, 11))
+   #  print("T5P3  = ", avgTwoCanal(10, 11))
+   #  print("------------C_R-----------------")
+   #  #print("C4T4  = ", avgTwoCanal(8, 9))
+   #  print("C4P4  = ", avgTwoCanal(8, 13))
+   #  print("C4T6  = ", avgTwoCanal(8, 14))
+   #  print("T4P4  = ", avgTwoCanal(9, 13))
+   #  print("T4T6  = ", avgTwoCanal(9, 14))
+   #  print("P4T6  = ", avgTwoCanal(13, 14))
+   #  print("------------O_l-----------------")
+   # # print("T5P3  = ", avgTwoCanal(10, 11))
+   #  print("T5O1  = ", avgTwoCanal(10, 15))
+   #  print("P3O1  = ", avgTwoCanal(11, 15))
+   #  print("------------O_r-----------------")
+   #  #print("P4T6  = ", avgTwoCanal(13, 14))
+   #  print("T6O2  = ", avgTwoCanal(14, 16))
+   #  print("P4O2  = ", avgTwoCanal(13, 16))
+   #  print("------------Межполушарная-----------------")
+   #  print("F3F4  = ", avgTwoCanal(2,3))
+   #  print("C3C4  = ", avgTwoCanal(6,8))
+   #  print("P3P4  = ", avgTwoCanal(11,13))
+   #  print("O1O2  = ", avgTwoCanal(15,16))
+   #  print("-----------------------------")
+   #  print("F7F8  = ", avgTwoCanal(1, 4))
+   #  print("T3T4  = ", avgTwoCanal(5, 9))
+   #  print("T5T6  = ", avgTwoCanal(10, 14))
+   #  print("-----------------------------")
+   #  print("F7T5  = ", avgTwoCanal(1, 10))
+   #  print("F3P3  = ", avgTwoCanal(2, 11))
+   #  print("F4P4  = ", avgTwoCanal(3, 13))
+   #  print("F8T6  = ", avgTwoCanal(4, 14))
+   #  print("-----------------------------")
+   #  print("F3O1  = ", avgTwoCanal(2, 15))
+   #  print("F4O2  = ", avgTwoCanal(3, 16))
+   #  print("-----------------------------")
+   #  print("F3P4  = ", avgTwoCanal(2, 10))
+   #  print("F4P3  = ", avgTwoCanal(3, 11))
+   #  print("F7T6  = ", avgTwoCanal(1, 14))
+   #  print("F8T5  = ", avgTwoCanal(4, 10))
+   #  # #AmplitudeAllPac(39)
+   #
+   #  print("------------Alpha_shiz-----------------")
+   #  print("------------F_L-----------------")
+   #  print("F7F3  = ", avgTwoCanal2(1, 2))
+   #  print("F7T3  = ", avgTwoCanal2(1, 5))
+   #  print("F7C3  = ", avgTwoCanal2(1, 6))
+   #  print("F3T3  = ", avgTwoCanal2(2, 5))
+   #  print("F3C3  = ", avgTwoCanal2(2, 6))
+   #  print("T3C3  = ", avgTwoCanal2(5, 6))
+   #  print("------------F_R-----------------")
+   #  print("F8F4  = ", avgTwoCanal2(4, 3))
+   #  print("F8C4  = ", avgTwoCanal2(4, 8))
+   #  print("F8T4  = ", avgTwoCanal2(4, 9))
+   #  print("F4C4  = ", avgTwoCanal2(3, 8))
+   #  print("F4T4  = ", avgTwoCanal2(3, 9))
+   #  print("C4T4  = ", avgTwoCanal2(8, 9))
+   #  print("------------C_L-----------------")
+   #  print("T3C3  = ", avgTwoCanal2(5, 6))
+   #  print("T3T5  = ", avgTwoCanal2(5, 10))
+   #  print("T3P3  = ", avgTwoCanal2(5, 11))
+   #  print("C3T5  = ", avgTwoCanal2(6, 10))
+   #  print("C3P3  = ", avgTwoCanal2(6, 11))
+   #  print("T5P3  = ", avgTwoCanal2(10, 11))
+   #  print("------------C_R-----------------")
+   #  print("C4T4  = ", avgTwoCanal2(8, 9))
+   #  print("C4P4  = ", avgTwoCanal2(8, 13))
+   #  print("C4T6  = ", avgTwoCanal2(8, 14))
+   #  print("T4P4  = ", avgTwoCanal2(9, 13))
+   #  print("T4T6  = ", avgTwoCanal2(9, 14))
+   #  print("P4T6  = ", avgTwoCanal2(13, 14))
+   #  print("------------O_l-----------------")
+   #  print("T5P3  = ", avgTwoCanal2(10, 11))
+   #  print("T5O1  = ", avgTwoCanal2(10, 15))
+   #  print("P3O1  = ", avgTwoCanal2(11, 15))
+   #  print("------------O_r-----------------")
+   #  print("P4T6  = ", avgTwoCanal2(13, 14))
+   #  print("T6O2  = ", avgTwoCanal2(14, 16))
+   #  print("P4O2  = ", avgTwoCanal2(13, 16))
+   #  print("------------Межполушарная-----------------")
+   #  print("F3F4  = ", avgTwoCanal2(2, 3))
+   #  print("C3C4  = ", avgTwoCanal2(6, 8))
+   #  print("P3P4  = ", avgTwoCanal2(11, 13))
+   #  print("O1O2  = ", avgTwoCanal2(15, 16))
+   #  print("-----------------------------")
+   #  print("F7F8  = ", avgTwoCanal2(1, 4))
+   #  print("T3T4  = ", avgTwoCanal2(5, 9))
+   #  print("T5T6  = ", avgTwoCanal2(10, 14))
+   #  print("-----------------------------")
+   #  print("F7T5  = ", avgTwoCanal2(1, 10))
+   #  print("F3P3  = ", avgTwoCanal2(2, 11))
+   #  print("F4P4  = ", avgTwoCanal2(3, 13))
+   #  print("F8T6  = ", avgTwoCanal2(4, 14))
+   #  print("-----------------------------")
+   #  print("F3O1  = ", avgTwoCanal2(2, 15))
+   #  print("F4O2  = ", avgTwoCanal2(3, 16))
+   #  print("-----------------------------")
+   #  print("F3P4  = ", avgTwoCanal2(2, 10))
+   #  print("F4P3  = ", avgTwoCanal2(3, 11))
+   #  print("F7T6  = ", avgTwoCanal2(1, 14))
+   #  print("F8T5  = ", avgTwoCanal2(4, 10))
+
+   #  norm = [0.6,0.59,0.6,0.61,0.56,0.61]
+   #  shiz = [0.63,0.64,0.58,0.61,0.6,0.69]
+   #  x =[i for i in np.arange(0,3,0.5)]
+   #  my_xticks = ['F_L', 'F_R', 'C_L', 'C_R', 'O_L', 'O_R']
+   #  #my_xticks = [ ' F3-4 ' , ' C3-4 ' , ' P3-4 ' , ' O1-2 ' ]
+   #  plt.figure("Региональные внутриполушарные различия в delta диапазоне")
+   #  #plt.figure("Межполушарная синхронность  в дельта диапазоне")
+   #  #plt.grid()
+   #  plt.xticks(x, my_xticks)
+   # # plt.title(r'$\alpha$')
+   #  #plt.title(r'$\beta1$')
+   # # plt.title(r'$\beta2$')
+   #  #plt.title(r'$\theta$')
+   #  plt.title(r'$\delta$')
+   #  plt.plot(x,norm,marker = 's',color = '#ff0000')
+   #  plt.plot(x,shiz,marker = 'o',color = '#000000')
+   #  plt.legend(("Норма","Шизофрения"))
+   #  plt.grid()
+   #  plt.show()
+
+    # path2 = "NormBetta1\\" + str(1) + ".txt"
+    # data = pd.read_csv(path2, sep=" ", header=None)
+    # # w = np.fft.fft(data[1][0:11000])
+    # Hn = np.fft.fft(data[2][0:N_DATA])
+    # freqs = (np.fft.fftfreq(len(Hn), 1 /FREQUENCY))
+    # idx = np.argmax(np.abs(Hn))
+    # print(np.abs(Hn))
+    # freq_in_hertz = freqs[idx]
+    # print('Main freq:', freq_in_hertz)
+    #
+    # xF = Hn[0:5500]
+    # fr = np.linspace(0, FREQUENCY/2, 5500)
+    # plt.subplot(2, 1, 1)
+    # x = [i for i in range(2000)]
+    # plt.plot(x,data[1][0:2000])
+    # plt.subplot(2, 1, 2)
+    # plt.plot(fr,abs(xF)**2)
+    #
+    # plt.xlabel('frequency [Hz]')
+    # plt.ylabel('PSD')
+    #
+    #
+    #
+    # plt.show()
+
+
+
+
+    # path2 = "27.txt"
+    # data = pd.read_csv(path2, sep=" ", header=None)
     # w = np.fft.fft(data[1][0:11000])
+    #
     # arg = []
     # A=[]
     # freq = []
-    # for i in np.arange(0, 5500, 1):
+    # for i in np.arange(0, 2000, 1):
     #     A.append((w[i].real ** 2 + (w[i].imag) ** 2))  # модуль амплитуды
     #
-    # print ("A = " , A)
-    #
-    # for i in np.arange(0, 5500, 1):  # определение фазы
-    #     if w[i].imag != 0:
-    #         t = (-np.tanh((w[i].real) / (w[i].imag)))
-    #         arg.append(t)
-    #     else:
-    #         arg.append(np.pi / 2)
-    #     # радианы в градусы
-    #     arg[i]=(arg[i]*180)/np.pi
-    #     # получим частоты
-    #     freq.append((FREQUENCY*i)/(N_DATA-1))
-    # print("Частота " , freq)
-    # print("Аргумент " , arg)
+    # freq = np.linspace(0, FREQUENCY / 2, 5500)
+    # idx = np.argmax(np.abs(w))
+    # freqs = (np.fft.fftfreq(len(w), 1 / FREQUENCY))
+    # freq_in_hertz = freqs[idx]
+    # print('Main freq:', freq_in_hertz)
     # w = np.fft.fft(data[1][0:11000])
-    # x = [i for i in range(11000)]
-    #
     # plt.figure("БПФ")
-    # plt.plot(x[0:5500], w[0:5500])
+    # plt.plot(freq[0:100], w[0:100])
     # plt.xlabel("Частота")
     # plt.ylabel("Амплитуда")
     # plt.grid()
     #
     # plt.figure("Спектр мощности")
-    # plt.plot(x[0:5500],A)
-    # mmax = abs(max(w))
-    # mmin = abs(min(w))
-    # allMax = max(mmax, mmin)
-    # mas = []
-    # for j in range(10000):
-    #     w[j] = ((2 * w[j]) / allMax)  # для нормального отображение графиков сделаем нормировку
+    # plt.plot(freq[0:100],A[0:100])
     # plt.grid()
-    #
-    # data2 = np.array([w[0:5500]])
-    # info = mne.create_info(
-    #     ch_names=['Амплитуда'],
-    #     ch_types=['eeg'],
-    #     sfreq=FREQUENCY
-    # )
-    # raw = mne.io.RawArray(data2, info)
-    # scalings = {'eeg': 1}
-    # calings = 'auto'  # Could also pass a dictionary with some value == 'auto'
-    # raw.plot(n_channels=1, scalings=scalings, title='Auto-scaled Data from arrays',
-    #          show=True, block=True)
-    #
-    # print(w)
+    # plt.show()
+
 
 
 
