@@ -408,7 +408,9 @@ if __name__ == "__main__":
     # amplitideTest(fileNameTest)
 
 
-# # # загрузить из файла
+
+# # # загру
+# зить из файла
 #
     # m = 0
     # for k in range(1,40):
